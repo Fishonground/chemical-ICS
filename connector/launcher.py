@@ -5,7 +5,7 @@ from uuid import uuid4
 import threading
 
 host_name = "0.0.0.0"
-port = 6006
+port = 6009
 
 app = Flask(__name__)             # create an app instance
 
@@ -28,7 +28,7 @@ def ordering():
         ordering_details = {
             "id": req_id,
             "operation": "ordering",
-            "deliver_to": "mixer",
+            "deliver_to": "equipment",
             "source": "connector",
             "bool": False,
             "mix": content['mix'],

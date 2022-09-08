@@ -1,5 +1,4 @@
 # implements Kafka topic consumer functionality
-
 from datetime import datetime
 import multiprocessing
 from random import randint
@@ -13,6 +12,10 @@ import base64
 
 
 _requests_queue: multiprocessing.Queue = None
+
+st_book = False
+saved_details = {"":""}
+flags_read_attemt = 3
 
 def create_connection(path):
     connection = None
@@ -46,18 +49,44 @@ def execute_read_query(connection, query):
 def mixing(id, details):
     time.sleep(randint(0,10))
     details['bool'] = True
-    details['deliver_to'] = 'mixer'
-    details['operation'] = 'operation_status'
-    proceed_to_deliver(id, details)
+    #details['deliver_to'] = 'mixer'
+    #details['operation'] = 'operation_status'
+    #proceed_to_deliver(id, details)
+    print('[mixing] mixed successfully')
         
+def book_storage(details):
+    if not st_book:
+        details['operation'] = 'storage_book'
+        details['deliver_to'] = 'storage'
+        print(details)
+        proceed_to_deliver(details['id'], details)
+
+def check_flags(details):
+    global flags_read_attemt
+    if flags_read_attemt>0:
+        if st_book:
+            details['deliver_to'] = 'bre'
+            details['operation'] = 'confirmation'
+            proceed_to_deliver(details['id'], details)
+        else:
+            print("Waiting book, trying again")
+            #todo may be "storage_book" request should be here?
+            time.sleep(1)
+            flags_read_attemt-=1
+            check_flags(details)
+    else:
+        print('Storage failed, confirmation request can\'t be requsted!')
 
 def handle_event(id, details_str):
     details = json.loads(details_str)
     print(f"[info] handling event {id}, {details['source']}->{details['deliver_to']}: {details['operation']}")
+
+    global st_book
     try:
         delivery_required = False
-        if details['operation'] == 'ask_equipment':
-            
+        if details['operation'] == 'ordering':
+            global st_book 
+            st_book = False
             connection = create_connection('./db/equipmnet.db')
             # create_table = """
             # CREATE TABLE IF NOT EXISTS equipment (
@@ -127,11 +156,11 @@ def handle_event(id, details_str):
                 execute_query(connection, update_status)   
             
             connection.close()
-            details['deliver_to'] = 'mixer'
-            details['operation'] = 'list_equipment'
-            delivery_required = True
+            book_storage(details)
+            delivery_required = False
 
-        elif details['operation'] == 'equipment_status_req':
+        elif details['operation'] == 'storage_status':
+            st_book = details['bool']
             #read from details list of equip and random it's status
             #you don't have to comment this fantastic idea (with # and !), i know about it's quality :))
             for x in details['from']:
@@ -140,14 +169,15 @@ def handle_event(id, details_str):
             for x in details['using']:
                 details['using'][details['using'].index(x)] += '!'+str(randint(499,503))
 
-            details['deliver_to'] = 'mixer'
-            details['operation'] = 'equipment_status'
-            delivery_required = True
-
+            global flags_read_attemt
+            flags_read_attemt = 3
+            check_flags(details)
+            delivery_required = False
 
         elif details['operation'] == 'confirmation':
             if details['bool']:
-                threading.Thread(target=lambda: mixing(id, details)).start()
+                #threading.Thread(target=lambda: mixing(id, details)).start()
+                mixing(id,details)
             #todo connect with mixing thread ending if it's exist
             connection = create_connection('./db/equipmnet.db')
             for x in details['from']:
@@ -182,7 +212,30 @@ def handle_event(id, details_str):
                 """ % eq_id
                 execute_query(connection, update_status)     
             connection.close()
-            delivery_required = False
+            
+            n_details = details.copy()
+            if not n_details['bool']:
+                n_details['operation'] = 'unblock'
+                n_details['deliver_to'] = 'storage'
+                #_requests_queue.put(details)
+                proceed_to_deliver(n_details['id'], n_details)
+            else:
+                n_details['operation'] = 'decomission'
+                n_details['deliver_to'] = 'storage'
+                #_requests_queue.put(details)
+                proceed_to_deliver(n_details['id'], n_details)
+
+            #todo : now it's a crutch, should be copy func
+            
+            for x in details['from']:
+                if not x == 'storage':
+                    details['from'][details['from'].index(x)] = str(x[:x.find('!')])
+            for x in details['using']:
+                    details['using'][details['using'].index(x)] = str(x[:x.find('!')])
+            details['operation'] = 'operation_status'
+            details['deliver_to'] = 'reporter'
+            #_requests_queue.put(details)
+            delivery_required = True
         else:
             print(f"[warning] unknown operation!\n{details}")                
         if delivery_required:

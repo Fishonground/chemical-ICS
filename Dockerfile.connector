@@ -16,4 +16,4 @@ USER appuser
 WORKDIR /connector
 CMD ["python", "connector.py", "config.ini"]
 
-EXPOSE 6006
+EXPOSE 6009

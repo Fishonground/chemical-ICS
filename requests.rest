@@ -1,6 +1,6 @@
 ### create new order
 
-POST http://0.0.0.0:6006/ordering HTTP/1.1
+POST http://0.0.0.0:6009/ordering HTTP/1.1
 content-type: application/json
 auth: very-secure-token
 
@@ -11,7 +11,7 @@ auth: very-secure-token
         "cathalizator"
     ],
     "amount": [
-        100,
+        50,
         10,
         11
     ],
@@ -23,19 +23,6 @@ auth: very-secure-token
     "using": [
         "list"
     ]  
-} 
-
-
-### send the pincode
-
-POST http://localhost:6006/pincoding HTTP/1.1
-
-content-type: application/json
-
-auth: very-secure-token
-
-{
-    "pincode": 12345
 } 
 
 

@@ -48,13 +48,12 @@ def execute_read_query(connection, query):
 def handle_event(id, details_str):
     details = json.loads(details_str)
     print(f"[info] handling event {id}, {details['source']}->{details['deliver_to']}: {details['operation']}")
-    global x_coord
-    global y_coord
     try:
         delivery_required = False
         connection = create_connection('./db/storage.db')
         if details['operation'] == 'storage_book':
             
+            details['bool'] = False
             # create_table = """
             # CREATE TABLE IF NOT EXISTS storage (
             # id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,16 +75,14 @@ def handle_event(id, details_str):
             # """
             # execute_query(connection, create_storage)
 
-            # update_status = """
-            #         UPDATE
-            #         storage
-            #         SET
-            #         amount = 400,
-            #         blocked_amount = 0
-            #         WHERE
-            #         id = 1
-            #         """ 
-            # execute_query(connection, update_status) 
+            update_status = """
+                    UPDATE
+                    storage
+                    SET
+                    amount = 400,
+                    blocked_amount = 0
+                    """ 
+            execute_query(connection, update_status) 
 
 
             # select_storage = "SELECT * from storage"
@@ -114,7 +111,7 @@ def handle_event(id, details_str):
                 except Exception as e:
                     print(f"[error] failed to book in storage: {e}")
                     details['bool'] = False
-            details['deliver_to'] = 'mixer'
+            details['deliver_to'] = 'equipment'
             details['operation'] = 'storage_status'
             delivery_required = True
         elif details['operation'] == 'decomission':

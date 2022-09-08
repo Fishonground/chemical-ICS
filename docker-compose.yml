@@ -77,14 +77,6 @@ services:
     ports:
       - "6008:6008"
 
-  mixer:
-    image: mixer
-    build:
-      context: .
-      dockerfile: ./Dockerfile.mixer
-    depends_on:
-      - broker
-
   connector:
     image: connector
     build:
@@ -93,7 +85,7 @@ services:
     depends_on:
       - broker
     ports:
-      - "6006:6006"
+      - "6009:6009"
 
   storage:
     image: storage

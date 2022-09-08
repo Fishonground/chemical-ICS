@@ -2,7 +2,7 @@
 
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
-from api import start_rest
+from launcher import start_rest
 from consumer import start_consumer
 from producer import start_producer
 from multiprocessing import Queue

@@ -52,40 +52,43 @@ def handle_event(id, details_str):
     try:
         delivery_required = False
         if details['operation'] == 'confirmation':
-           #todo checking tules from db
+           #todo checking rules from db
             connection = create_connection('./db/bre.db')
             
-            create_table = """
-            CREATE TABLE IF NOT EXISTS bre (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            rule INTEGER,
-            element TEXT NOT NULL,
-            temperature INTEGER,
-            operation TEXT NOT NULL
-            );
-            """
-            # amount INTEGER,
-            # amount_link_element TEXT,
-            # amount_link_amount INTEGER
-            execute_query(connection, create_table)
+            # create_table = """
+            # CREATE TABLE IF NOT EXISTS bre (
+            # id INTEGER PRIMARY KEY AUTOINCREMENT,
+            # rule INTEGER,
+            # element TEXT NOT NULL,
+            # temperature INTEGER,
+            # operation TEXT NOT NULL
+            # );
+            # """
+            # # amount INTEGER,
+            # # amount_link_element TEXT,
+            # # amount_link_amount INTEGER
+            # execute_query(connection, create_table)
 
-            create_storage = """
-            INSERT INTO
-            bre (rule, element, temperature, operation)
-            VALUES
-            (1, 'list', 500, 'more'),
-            (3, 'balloon', 50, 'less')
-            """
-            #(2, 'cathalizator', 2, 0, 'A', 50),
-            execute_query(connection, create_storage)
+            # create_storage = """
+            # INSERT INTO
+            # bre (rule, element, temperature, operation)
+            # VALUES
+            # (1, 'list', 500, 'more'),
+            # (3, 'balloon', 50, 'less')
+            # """
+            # #(2, 'cathalizator', 2, 0, 'A', 50),
+            # execute_query(connection, create_storage)
             
             select_bre = "SELECT * from bre"
-            selected_bre= execute_read_query(connection, select_bre)
+            selected_bre = execute_read_query(connection, select_bre)
+            #print (selected_bre)
             #todo refactore
             #todo normal rules (and rule 2 from task )checking block
             check = False
             rules=[]
+            del rules[:]
             result=[]
+            del result [:]
             #print('start bre checking' + str(time.time()))
             for x in selected_bre:
                 #if not selected_bre.index(x) == 1: 
@@ -106,6 +109,7 @@ def handle_event(id, details_str):
                                 else:
                                     rules.append(x[1])
                                     result.append(False)
+                    #print(rules)
                     for i in details['using']:
                         if i.find(x[2])>=0:
                             t = details['using'][details['using'].index(i)].find('!')+1
@@ -129,13 +133,8 @@ def handle_event(id, details_str):
             details['result'] = result
             if False in result:
                 details['bool'] = False
-                details['deliver_to'] = 'mixer'
-                details['operation'] = 'confirmation'
-                _requests_queue.put(details)
             else:
                 details['bool'] = True
-            #todo crutch with copy
-            time.sleep(1)
             details['deliver_to'] = 'equipment'
             details['operation'] = 'confirmation'
             delivery_required = True
